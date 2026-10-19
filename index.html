@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-us">
 <head>
-  <base href="https://github.com">
+  <base href="https://github.com/Humid-Mouse48/deltarune">
   <meta charset="UTF-8">
+  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0" />
   <link rel="stylesheet" href="style.css">
   <style>
     #game-frame {
@@ -151,11 +152,53 @@
       audio.src = '';
       audio.load();
       document.removeEventListener('keydown', handleKeyDown);
-      
-      uiContainer.style.display = 'none';
-      gameFrame.style.display = 'block';
-      gameFrame.src = `chapter${chapter}/index.html`;
-      gameFrame.focus();
+
+      if (chapter === 5) {
+        // Special handler: Force a high database version to bypass the Chapter 5 crash block
+        if (window.indexedDB) {
+          const targets = ['/idbfs', 'gm_html5_indexeddb', 'gamedata'];
+          let openCount = 0;
+          
+          const proceed = () => {
+            uiContainer.style.display = 'none';
+            gameFrame.style.display = 'block';
+            gameFrame.src = "chapter5/index.html";
+            gameFrame.onload = () => gameFrame.focus();
+          };
+
+          targets.forEach(name => {
+            const req = window.indexedDB.open(name, 3000);
+            req.onsuccess = (e) => {
+              e.target.result.close();
+              openCount++;
+              if (openCount === targets.length) proceed();
+            };
+            req.onerror = () => {
+              openCount++;
+              if (openCount === targets.length) proceed();
+            };
+          });
+        } else {
+          uiContainer.style.display = 'none';
+          gameFrame.style.display = 'block';
+          gameFrame.src = "chapter5/index.html";
+          gameFrame.onload = () => gameFrame.focus();
+        }
+      } else {
+        // Original unchanged structural logic for Chapters 1-4
+        fetch(`chapter${chapter}/index.html`).then(res => res.text()).then(html => {
+          document.documentElement.innerHTML = html;
+          document.documentElement.querySelectorAll('script').forEach(oldScript => {
+            const newScript = document.createElement('script');
+            if (oldScript.src) {
+              newScript.src = oldScript.src;
+            } else {
+              newScript.textContent = oldScript.textContent;
+            }
+            document.body.appendChild(newScript);
+          });
+        });
+      }
     }
 
     const menumoveaudio = new Audio('audios/snd_menumove.mp3');
