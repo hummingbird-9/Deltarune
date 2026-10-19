@@ -32,9 +32,11 @@ jobs:
       - name: Compress Audio Files to Save Space
         run: |
           echo "Optimizing audio file parameters..."
+          # Safe path expansion handler to preserve nested directories
           find . -type f \( -name "*.mp3" -o -name "*.ogg" \) | while read -r file; do
-            ffmpeg -y -i "$file" -b:a 64k "temp_file.${file##*.}"
-            mv "temp_file.${file##*.}" "$file"
+            ext="${file##*.}"
+            ffmpeg -y -i "$file" -b:a 64k "temp_file.${ext}"
+            mv "temp_file.${ext}" "$file"
           done
 
       - name: Setup Pages
